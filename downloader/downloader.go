@@ -64,19 +64,11 @@ func downloadReport(report *models.Report, directory string) DownloadResult {
 }
 
 func DownloadReports(reports []*models.Report, directory string) []DownloadResult {
-	//DEBUGGING: len(reports)
-	results := make([]DownloadResult, 10)
+	results := make([]DownloadResult, len(reports))
 
-	//DEBUGGING: only download the first 10
-	for i := 0; i < 10; i++ {
-		report := reports[i]
-		result := downloadReport(report, directory)
-		results[i] = result
-	}
-
-	/* for _, report := range reports {
+	for _, report := range reports {
 		downloadReport := downloadReport(report, directory)
 		results = append(results, downloadReport)
-	} */
+	}
 	return results
 }
