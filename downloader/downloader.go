@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"sync"
 
 	"github.com/F0903/pdf_downloader_uge5/models"
 )
@@ -66,9 +67,19 @@ func downloadReport(report *models.Report, directory string) DownloadResult {
 func DownloadReports(reports []*models.Report, directory string) []DownloadResult {
 	results := make([]DownloadResult, len(reports))
 
-	for _, report := range reports {
-		downloadReport := downloadReport(report, directory)
-		results = append(results, downloadReport)
+	var wg sync.WaitGroup
+
+	for i, report := range reports {
+		wg.Add(1)
+		// Launch a goroutine for each report
+		go func(index int, report *models.Report) {
+			defer wg.Done() // Decrease counter when we exit here
+
+			result := downloadReport(report, directory)
+			results[index] = result
+		}(i, report)
 	}
+
+	wg.Wait()
 	return results
 }
