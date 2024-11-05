@@ -1,13 +1,6 @@
-package utils
+package excel
 
-func IntPow(base, exp int) int {
-	result := 1
-	for exp > 0 {
-		result *= base
-		exp--
-	}
-	return result
-}
+import "github.com/F0903/pdf_downloader_uge5/utils"
 
 func getCharValue(char rune) int {
 	// The range that column names can be goes from A to Z
@@ -24,7 +17,7 @@ func ColumnNameToIndex(name string) int {
 		charValue := getCharValue(char) + 1
 
 		exp := len(name) - 1 - i
-		pow := IntPow(base, exp)
+		pow := utils.IntPow(base, exp)
 
 		totalCharValue := charValue*pow + (pow / base)
 		total += totalCharValue

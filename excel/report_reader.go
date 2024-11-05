@@ -1,39 +1,33 @@
-package main
+package excel
 
 import (
 	"errors"
 	"fmt"
 
+	"github.com/F0903/pdf_downloader_uge5/models"
 	"github.com/xuri/excelize/v2"
 )
 
-type Report struct {
-	id                      string
-	name                    string
-	primary_download_link   string
-	secondary_download_link string
-}
-
-func createReportFromRow(row []string) *Report {
-	report := &Report{}
+func createReportFromRow(row []string) *models.Report {
+	report := &models.Report{}
 	for colIndex, colCell := range row {
 		// Check if the column index maps to a column we want
 		switch ColumnMappings[colIndex] {
 		case IdColumn:
-			report.id = colCell
+			report.Id = colCell
 		case NameColumn:
-			report.name = colCell
+			report.Name = colCell
 		case PrimaryDownloadColumn:
-			report.primary_download_link = colCell
+			report.PrimaryDownloadLink = colCell
 		case SecondaryDownloadColumn:
-			report.secondary_download_link = colCell
+			report.FallbackDownloadLink = colCell
 		}
 	}
 
 	return report
 }
 
-func ReadReports(path string) ([]*Report, error) {
+func ReadReports(path string) ([]*models.Report, error) {
 	f, err := excelize.OpenFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Excel spreadsheet!\n%w", err)
@@ -59,14 +53,12 @@ func ReadReports(path string) ([]*Report, error) {
 		return nil, errors.New("empty spreadsheet")
 	}
 
-	reports := make([]*Report, 0)
+	reports := make([]*models.Report, 0)
 	for rows.Next() {
 		row, err := rows.Columns()
 		if err != nil {
 			return nil, fmt.Errorf("failed to get single row in spreadsheet!\n%w", err)
 		}
-
-		fmt.Println()
 
 		report := createReportFromRow(row)
 		reports = append(reports, report)

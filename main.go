@@ -3,6 +3,9 @@ package main
 import (
 	"fmt"
 	"os"
+
+	"github.com/F0903/pdf_downloader_uge5/downloader"
+	"github.com/F0903/pdf_downloader_uge5/excel"
 )
 
 func main() {
@@ -26,10 +29,11 @@ func main() {
 	}
 
 	// Get the "reports"
-	reports, err := ReadReports(dataFilePath)
+	reports, err := excel.ReadReports(dataFilePath)
 	if err != nil {
 		fmt.Printf("Failed to read Excel: \n%v", err)
 		return
 	}
-	fmt.Println(reports)
+
+	downloader.DownloadReports(reports, outputPath)
 }
