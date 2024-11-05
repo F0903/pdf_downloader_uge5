@@ -10,46 +10,53 @@ import (
 	"sync"
 
 	"github.com/F0903/pdf_downloader_uge5/models"
+	"github.com/vbauerster/mpb/v8"
+	"github.com/vbauerster/mpb/v8/decor"
 )
 
-func downloadResource(url string, filename string, directory string) error {
-	urlExt := path.Ext(url)
-	fullDownloadPath := path.Join(directory, filename+urlExt)
-
-	fmt.Printf("Downloading %s...\n", fullDownloadPath)
-
+func downloadResourceWithProgress(url string, fullDownloadPath string, progressBar *mpb.Bar) error {
+	// Request the web resource
 	resp, err := http.Get(url)
 	if err != nil {
 		return fmt.Errorf("http GET request failed %w", err)
 	}
 	defer resp.Body.Close()
 
+	// Create the download file
 	file, err := os.Create(fullDownloadPath)
 	if err != nil {
 		return fmt.Errorf("could not create file %w", err)
 	}
 	defer file.Close()
 
-	_, err = io.Copy(file, resp.Body)
+	progressBar.SetTotal(resp.ContentLength+1, false)
+
+	// Get proxy writer (fills progress bar)
+	writer := progressBar.ProxyWriter(file)
+	defer writer.Close()
+
+	// Read from body and into proxy (and thus file)
+	_, err = io.Copy(writer, resp.Body)
 	if err != nil {
 		return fmt.Errorf("could not copy web response to file %w", err)
 	}
 
-	fmt.Printf("Downloaded %s\n", fullDownloadPath)
 	return nil
 }
 
-func downloadReport(report *models.Report, directory string) DownloadResult {
+func downloadReportWithProgress(report *models.Report, fullDownloadPath string, progressBar *mpb.Bar) DownloadResult {
 	if report.PrimaryDownloadLink == "" && report.FallbackDownloadLink == "" {
+		progressBar.Abort(true)
 		return NewDownloadResult(report, NewDownloadState(MissingURLs, nil))
 	}
 
 	currentUrl := report.PrimaryDownloadLink
 	onFallback := false
 	for {
-		err := downloadResource(currentUrl, report.Id, directory)
+		err := downloadResourceWithProgress(currentUrl, fullDownloadPath, progressBar)
 		if err != nil {
 			if onFallback {
+				progressBar.Abort(true)
 				return NewDownloadResult(report, NewDownloadState(Error, errors.New("all download links were broken")))
 			}
 
@@ -61,6 +68,7 @@ func downloadReport(report *models.Report, directory string) DownloadResult {
 		break
 	}
 
+	progressBar.SetTotal(progressBar.Current(), true)
 	return NewDownloadResult(report, NewDownloadState(Done, nil))
 }
 
@@ -69,17 +77,37 @@ func DownloadReports(reports []*models.Report, directory string) []DownloadResul
 
 	var wg sync.WaitGroup
 
+	p := mpb.New(
+		mpb.WithWaitGroup(&wg),
+		mpb.WithAutoRefresh(),
+	)
+
 	for i, report := range reports {
 		wg.Add(1)
-		// Launch a goroutine for each report
-		go func(index int, report *models.Report) {
+
+		currentUrl := report.PrimaryDownloadLink
+		fileName := report.Id
+		urlExt := path.Ext(currentUrl)
+		fullDownloadPath := path.Join(directory, fileName+urlExt)
+
+		// It's important to create the progress bar here and not in the new thread or it will panic
+		progressBar := p.AddBar(100,
+			mpb.PrependDecorators(
+				decor.Name(fileName, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
+			),
+			mpb.AppendDecorators(decor.Percentage()),
+			mpb.BarRemoveOnComplete(),
+		)
+
+		// Explicitly pass variables or it will get a little funky
+		go func(index int, report *models.Report, progressBar *mpb.Bar) {
 			defer wg.Done() // Decrease counter when we exit here
 
-			result := downloadReport(report, directory)
+			result := downloadReportWithProgress(report, fullDownloadPath, progressBar)
 			results[index] = result
-		}(i, report)
+		}(i, report, progressBar)
 	}
 
-	wg.Wait()
+	p.Wait()
 	return results
 }

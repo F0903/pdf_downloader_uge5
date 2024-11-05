@@ -1,1 +1,8 @@
+# Binaries for programs and plugins
+*.exe
+*.dll
+*.so
+*.dylib
+
+# Usual output folder
 downloads

@@ -35,8 +35,6 @@ func main() {
 		return
 	}
 
-	// DEBUGGING: only download the first 10
-	reports = reports[:10]
 	results := downloader.DownloadReports(reports, outputDir)
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {

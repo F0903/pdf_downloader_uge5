@@ -5,12 +5,14 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Launch Package",
+      "name": "Launch Main",
       "type": "go",
+      "preLaunchTask": "Build workspace",
       "request": "launch",
-      "mode": "auto",
-      "program": "${fileDirname}",
-      "args": ["data/GRI_2017_2020.xlsx", "downloads"]
+      "mode": "exec",
+      "program": "${workspaceFolderBasename}.exe",
+      "args": ["data/GRI_2017_2020.xlsx", "downloads"],
+      "console": "integratedTerminal"
     }
   ]
 }
