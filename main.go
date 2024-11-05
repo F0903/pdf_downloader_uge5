@@ -20,10 +20,10 @@ func main() {
 	}
 
 	dataFilePath := args[1]
-	outputPath := args[2]
+	outputDir := args[2]
 
 	// Create the output directory if it doesn’t exist
-	if err := os.MkdirAll(outputPath, os.ModePerm); err != nil {
+	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
 		fmt.Printf("Failed to create output directory: \n%v", err)
 		return
 	}
@@ -35,5 +35,10 @@ func main() {
 		return
 	}
 
-	downloader.DownloadReports(reports, outputPath)
+	results := downloader.DownloadReports(reports, outputDir)
+	err = excel.WriteDownloadResults(results, outputDir)
+	if err != nil {
+		fmt.Printf("Failed to write download result metadata!\n%v", err)
+		return
+	}
 }

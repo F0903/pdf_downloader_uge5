@@ -28,6 +28,7 @@ func createReportFromRow(row []string) *models.Report {
 }
 
 func ReadReports(path string) ([]*models.Report, error) {
+	fmt.Printf("Reading excel spreadsheet '%s'...\n", path)
 	f, err := excelize.OpenFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read Excel spreadsheet!\n%w", err)
@@ -63,6 +64,8 @@ func ReadReports(path string) ([]*models.Report, error) {
 		report := createReportFromRow(row)
 		reports = append(reports, report)
 	}
+
+	fmt.Printf("Done reading '%s'\n", path)
 
 	return reports, nil
 }

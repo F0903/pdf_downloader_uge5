@@ -10,6 +10,8 @@ func getCharValue(char rune) int {
 }
 
 // This took way too long to get right
+// and I just found out the excel library
+// has this function
 func ColumnNameToIndex(name string) int {
 	const base = 25
 	total := 0

@@ -15,7 +15,7 @@ func downloadResource(url string, filename string, directory string) error {
 	urlExt := path.Ext(url)
 	fullDownloadPath := path.Join(directory, filename+urlExt)
 
-	fmt.Printf("Downloading %s...", fullDownloadPath)
+	fmt.Printf("Downloading %s...\n", fullDownloadPath)
 
 	resp, err := http.Get(url)
 	if err != nil {
@@ -34,13 +34,13 @@ func downloadResource(url string, filename string, directory string) error {
 		return fmt.Errorf("could not copy web response to file %w", err)
 	}
 
-	fmt.Printf("Downloaded %s", fullDownloadPath)
+	fmt.Printf("Downloaded %s\n", fullDownloadPath)
 	return nil
 }
 
-func downloadReport(report *models.Report, directory string) *DownloadReport {
+func downloadReport(report *models.Report, directory string) DownloadResult {
 	if report.PrimaryDownloadLink == "" && report.FallbackDownloadLink == "" {
-		return errors.New("no download links were supplied")
+		return NewDownloadResult(report, NewDownloadState(MissingURLs, nil))
 	}
 
 	currentUrl := report.PrimaryDownloadLink
@@ -49,7 +49,7 @@ func downloadReport(report *models.Report, directory string) *DownloadReport {
 		err := downloadResource(currentUrl, report.Id, directory)
 		if err != nil {
 			if onFallback {
-				return errors.New("all download links were broken")
+				return NewDownloadResult(report, NewDownloadState(Error, errors.New("all download links were broken")))
 			}
 
 			currentUrl = report.FallbackDownloadLink
@@ -60,11 +60,23 @@ func downloadReport(report *models.Report, directory string) *DownloadReport {
 		break
 	}
 
-	return nil
+	return NewDownloadResult(report, NewDownloadState(Done, nil))
 }
 
-func DownloadReports(reports []*models.Report, directory string) {
-	for _, report := range reports {
-		downloadReport(report, directory)
+func DownloadReports(reports []*models.Report, directory string) []DownloadResult {
+	//DEBUGGING: len(reports)
+	results := make([]DownloadResult, 10)
+
+	//DEBUGGING: only download the first 10
+	for i := 0; i < 10; i++ {
+		report := reports[i]
+		result := downloadReport(report, directory)
+		results[i] = result
 	}
+
+	/* for _, report := range reports {
+		downloadReport := downloadReport(report, directory)
+		results = append(results, downloadReport)
+	} */
+	return results
 }

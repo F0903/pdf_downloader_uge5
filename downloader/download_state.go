@@ -5,9 +5,9 @@ import "fmt"
 type DownloadStateEnum int
 
 const (
-	Done = iota
+	Done = iota + 1
 	Error
-	MissingURL
+	MissingURLs
 )
 
 type DownloadState struct {
@@ -15,10 +15,10 @@ type DownloadState struct {
 	err       error
 }
 
-func NewDownloadState(state DownloadStateEnum) *DownloadState {
+func NewDownloadState(state DownloadStateEnum, associatedError error) *DownloadState {
 	return &DownloadState{
 		stateEnum: state,
-		err:       nil,
+		err:       associatedError,
 	}
 }
 
@@ -28,8 +28,8 @@ func (state *DownloadState) String() string {
 		return "Done"
 	case Error:
 		return fmt.Sprintf("Error: %v", state.err)
-	case MissingURL:
-		return "Missing URL"
+	case MissingURLs:
+		return "Missing URLs"
 	}
 	return "Unknown DownloadState"
 }
