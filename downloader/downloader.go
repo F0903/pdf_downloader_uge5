@@ -56,7 +56,7 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 func downloadReportWithProgress(report *models.Report, fullDownloadPath string, progressBar *mpb.Bar) DownloadResult {
 	if report.PrimaryDownloadLink == "" && report.FallbackDownloadLink == "" {
 		progressBar.Abort(true)
-		return NewDownloadResult(report, NewDownloadState(MissingURLs, nil))
+		return NewDownloadResult(report, NewMissingDownloadState())
 	}
 
 	currentUrl := report.PrimaryDownloadLink
@@ -71,8 +71,7 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 				progressBar.Abort(true)
 				return NewDownloadResult(
 					report,
-					NewDownloadState(
-						Error,
+					NewFailedDownloadState(
 						fmt.Errorf("all download links were broken: %w", fullErr),
 					),
 				)
@@ -87,7 +86,7 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 	}
 
 	progressBar.SetTotal(progressBar.Current(), true)
-	return NewDownloadResult(report, NewDownloadState(Done, nil))
+	return NewDownloadResult(report, NewSuccededDownloadState(fullDownloadPath))
 }
 
 func DownloadReports(reports []*models.Report, directory string) []DownloadResult {

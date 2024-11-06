@@ -8,30 +8,44 @@ import (
 type DownloadStateEnum int
 
 const (
-	Done = iota + 1
-	Error
-	MissingURLs
+	done = iota + 1
+	failed
+	missingURLs
 )
 
 type DownloadState struct {
-	stateEnum DownloadStateEnum
-	err       error
+	stateEnum   DownloadStateEnum
+	err         error
+	writtenPath string
 }
 
-func NewDownloadState(state DownloadStateEnum, associatedError error) *DownloadState {
+func NewFailedDownloadState(err error) *DownloadState {
 	return &DownloadState{
-		stateEnum: state,
-		err:       associatedError,
+		stateEnum: failed,
+		err:       err,
+	}
+}
+
+func NewSuccededDownloadState(writtenPath string) *DownloadState {
+	return &DownloadState{
+		stateEnum:   done,
+		writtenPath: writtenPath,
+	}
+}
+
+func NewMissingDownloadState() *DownloadState {
+	return &DownloadState{
+		stateEnum: missingURLs,
 	}
 }
 
 func (state *DownloadState) String() string {
 	switch state.stateEnum {
-	case Done:
+	case done:
 		return "Done"
-	case Error:
+	case failed:
 		return fmt.Sprintf("Error: %v", state.err)
-	case MissingURLs:
+	case missingURLs:
 		return "Missing URLs"
 	}
 	return "Unknown DownloadState"
@@ -39,11 +53,11 @@ func (state *DownloadState) String() string {
 
 func (state *DownloadState) StringNoNewLines() string {
 	switch state.stateEnum {
-	case Done:
+	case done:
 		return "Done"
-	case Error:
+	case failed:
 		return strings.ReplaceAll(fmt.Sprintf("Error: %v", state.err), "\n", ", ")
-	case MissingURLs:
+	case missingURLs:
 		return "Missing URLs"
 	}
 	return "Unknown DownloadState"

@@ -48,7 +48,7 @@ func run() error {
 	}
 
 	//DEBUGGING: get subset of reports
-	reports = reports[:10000]
+	reports = reports[:5000]
 
 	results := downloader.DownloadReports(reports, outputDir)
 	err = excel.WriteDownloadResults(results, outputDir)
