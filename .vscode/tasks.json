@@ -11,6 +11,19 @@
         "isDefault": true
       },
       "detail": "Build the workspace."
+    },
+    {
+      // Rarely used, only if need to view value of variables that would be optimized away
+      "type": "go",
+      "label": "Build debug workspace",
+      "command": "build",
+      "args": ["-gcflags", "all=-N -l"],
+      "problemMatcher": ["$go"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "detail": "Build the workspace."
     }
   ]
 }

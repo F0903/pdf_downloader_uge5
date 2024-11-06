@@ -27,6 +27,10 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("status code was not OK: %d", resp.StatusCode)
+	}
+
 	if !isPdf(resp) {
 		return errors.New("resource is not a PDF")
 	}
@@ -34,20 +38,16 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 	// Create the download file
 	file, err := os.Create(fullDownloadPath)
 	if err != nil {
-		return fmt.Errorf("could not create file %w", err)
+		return fmt.Errorf("could not create file: %w", err)
 	}
 	defer file.Close()
 
-	progressBar.SetTotal(resp.ContentLength+1, false)
+	progressBar.SetTotal(resp.ContentLength, false)
+	proxyReader := progressBar.ProxyReader(resp.Body)
 
-	// Get proxy writer (fills progress bar)
-	writer := progressBar.ProxyWriter(file)
-	defer writer.Close()
-
-	// Read from body and into proxy (and thus file)
-	_, err = io.Copy(writer, resp.Body)
-	if err != nil {
-		return fmt.Errorf("could not copy web response to file %w", err)
+	// Read from response and write to file whilst updating the progress bar
+	if _, err := io.Copy(file, proxyReader); err != nil {
+		return fmt.Errorf("could not write to file: %w", err)
 	}
 
 	return nil
@@ -109,11 +109,14 @@ func DownloadReports(reports []*models.Report, directory string) []DownloadResul
 		fullDownloadPath := path.Join(directory, fileName+urlExt)
 
 		// It's important to create the progress bar here and not in the new thread or it will panic
-		progressBar := p.AddBar(100,
+		progressBar := p.AddBar(0,
 			mpb.PrependDecorators(
 				decor.Name(fileName, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
 			),
-			mpb.AppendDecorators(decor.Percentage()),
+			mpb.AppendDecorators(
+				decor.AverageETA(decor.ET_STYLE_GO, decor.WC{C: decor.DindentRight | decor.DextraSpace}),
+				decor.Percentage(),
+			),
 			mpb.BarRemoveOnComplete(),
 		)
 

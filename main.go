@@ -1,6 +1,8 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"os"
 
@@ -8,15 +10,27 @@ import (
 	"github.com/F0903/pdf_downloader_uge5/excel"
 )
 
-func main() {
-	args := os.Args
-	if len(args) < 2 {
-		fmt.Println("You must provide a path to the excel spreadsheet!")
-		return
+func assertArgs(args []string) error {
+	argLen := len(args)
+
+	// + 1 because one arg is usually always provided by Windows
+	const maxArgs = 2 + 1
+
+	if argLen < 2 {
+		return errors.New("you must provide a path to the excel spreadsheet")
+	} else if argLen < 3 {
+		return errors.New("you must provide a path to downloads output folder")
+	} else if argLen > maxArgs {
+		return errors.New("too many arguments")
 	}
-	if len(args) < 3 {
-		fmt.Println("You must provide a path to downloads output folder!")
-		return
+
+	return nil
+}
+
+func run() error {
+	args := os.Args
+	if err := assertArgs(args); err != nil {
+		return fmt.Errorf("argument error: %w", err)
 	}
 
 	dataFilePath := args[1]
@@ -24,21 +38,34 @@ func main() {
 
 	// Create the output directory if it doesn’t exist
 	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
-		fmt.Printf("Failed to create output directory: \n%v", err)
-		return
+		return fmt.Errorf("failed to create output directory: \nw%w", err)
 	}
 
 	// Get the "reports"
 	reports, err := excel.ReadReports(dataFilePath)
 	if err != nil {
-		fmt.Printf("Failed to read Excel: \n%v", err)
-		return
+		return fmt.Errorf("failed to read Excel: \n%w", err)
 	}
+
+	//DEBUGGING: get subset of reports
+	reports = reports[:10]
 
 	results := downloader.DownloadReports(reports, outputDir)
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {
-		fmt.Printf("Failed to write download result metadata!\n%v", err)
-		return
+		return fmt.Errorf("failed to write download result metadata!\n%w", err)
 	}
+
+	return nil
+}
+
+func main() {
+	if err := run(); err != nil {
+		fmt.Printf("Error:\n %v\n", err)
+	} else {
+		fmt.Println("Done!")
+	}
+
+	fmt.Println("Press Enter to exit...")
+	bufio.NewReader(os.Stdin).ReadBytes('\n') // Wait for Enter
 }

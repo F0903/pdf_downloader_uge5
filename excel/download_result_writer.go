@@ -15,19 +15,19 @@ func setMainSheetWidths(f *excelize.File) error {
 	// Set Name column width
 	err := f.SetColWidth(sheetName, "B", "B", 50)
 	if err != nil {
-		return fmt.Errorf("could not set sheet B column width: %v", err)
+		return fmt.Errorf("could not set sheet B column width: %w", err)
 	}
 
 	// Set download urls column width
 	err = f.SetColWidth(sheetName, "C", "D", 150)
 	if err != nil {
-		return fmt.Errorf("could not set sheet C-D column width: %v", err)
+		return fmt.Errorf("could not set sheet C-D column width: %w", err)
 	}
 
 	// Set DownloadState column width
 	err = f.SetColWidth(sheetName, "E", "E", 200)
 	if err != nil {
-		return fmt.Errorf("could not set sheet E column widths: %v", err)
+		return fmt.Errorf("could not set sheet E column widths: %w", err)
 	}
 
 	return nil
