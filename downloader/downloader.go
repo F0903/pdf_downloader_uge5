@@ -103,10 +103,8 @@ func DownloadReports(reports []*models.Report, directory string) []DownloadResul
 	for i, report := range reports {
 		wg.Add(1)
 
-		currentUrl := report.PrimaryDownloadLink
 		fileName := report.Id
-		urlExt := path.Ext(currentUrl)
-		fullDownloadPath := path.Join(directory, fileName+urlExt)
+		fullDownloadPath := path.Join(directory, fileName+".pdf")
 
 		// It's important to create the progress bar here and not in the new thread or it will panic
 		progressBar := p.AddBar(0,
