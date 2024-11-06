@@ -19,9 +19,8 @@ func (result *DownloadResult) String() string {
 	return fmt.Sprintf("[%s | %s | (%s | %s)] = %s", resultReport.Id, resultReport.Name, resultReport.PrimaryDownloadLink, resultReport.FallbackDownloadLink, resultState.String())
 }
 
-// Just copy this around since it's just two pointers
-func NewDownloadResult(associatedReport *models.Report, state *DownloadState) DownloadResult {
-	return DownloadResult{
+func NewDownloadResult(associatedReport *models.Report, state *DownloadState) *DownloadResult {
+	return &DownloadResult{
 		associatedReport, state,
 	}
 }

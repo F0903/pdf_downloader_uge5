@@ -48,9 +48,10 @@ func run() error {
 	}
 
 	//DEBUGGING: get subset of reports
-	reports = reports[:5000]
+	reports = reports[:1000]
 
 	results := downloader.DownloadReports(reports, outputDir)
+
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to write download result metadata!\n%w", err)

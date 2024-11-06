@@ -39,6 +39,15 @@ func NewMissingDownloadState() *DownloadState {
 	}
 }
 
+func (state *DownloadState) IsDone() bool {
+	return state.stateEnum == done
+}
+
+func (state *DownloadState) SetError(err error) {
+	state.stateEnum = failed
+	state.err = err
+}
+
 func (state *DownloadState) String() string {
 	switch state.stateEnum {
 	case done:

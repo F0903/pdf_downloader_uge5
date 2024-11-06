@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/signal"
 	"path"
 	"sync"
 
@@ -14,9 +15,24 @@ import (
 	"github.com/vbauerster/mpb/v8/decor"
 )
 
-func isPdf(resp *http.Response) bool {
-	contentType := resp.Header.Get("Content-Type")
+func isPdf(contentType string) bool {
 	return contentType == "application/pdf"
+}
+
+func assertResponse(resp *http.Response) error {
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("status code was not OK: %d", resp.StatusCode)
+	}
+
+	contentType := resp.Header.Get("Content-Type")
+	// Download if content type is empty and just validate later
+	if contentType == "" {
+		return nil
+	} else if !isPdf(contentType) {
+		return errors.New("resource Content-Type is not PDF")
+	}
+
+	return nil
 }
 
 func downloadResourceWithProgress(url string, fullDownloadPath string, progressBar *mpb.Bar) error {
@@ -27,12 +43,8 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		return fmt.Errorf("status code was not OK: %d", resp.StatusCode)
-	}
-
-	if !isPdf(resp) {
-		return errors.New("resource is not a PDF")
+	if err := assertResponse(resp); err != nil {
+		return err
 	}
 
 	// Create the download file
@@ -53,7 +65,7 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 	return nil
 }
 
-func downloadReportWithProgress(report *models.Report, fullDownloadPath string, progressBar *mpb.Bar) DownloadResult {
+func downloadReportWithProgress(report *models.Report, fullDownloadPath string, progressBar *mpb.Bar) *DownloadResult {
 	if report.PrimaryDownloadLink == "" && report.FallbackDownloadLink == "" {
 		progressBar.Abort(true)
 		return NewDownloadResult(report, NewMissingDownloadState())
@@ -89,8 +101,11 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 	return NewDownloadResult(report, NewSuccededDownloadState(fullDownloadPath))
 }
 
-func DownloadReports(reports []*models.Report, directory string) []DownloadResult {
-	results := make([]DownloadResult, len(reports))
+func DownloadReports(reports []*models.Report, directory string) []*DownloadResult {
+	results := make([]*DownloadResult, len(reports))
+
+	interruptChannel := make(chan os.Signal, 1)
+	signal.Notify(interruptChannel, os.Interrupt)
 
 	var wg sync.WaitGroup
 
@@ -117,13 +132,12 @@ func DownloadReports(reports []*models.Report, directory string) []DownloadResul
 			mpb.BarRemoveOnComplete(),
 		)
 
-		// Explicitly pass variables or it will get a little funky
-		go func(index int, report *models.Report, progressBar *mpb.Bar) {
-			defer wg.Done() // Decrease counter when we exit here
-
+		go func() {
+			defer wg.Done()
 			result := downloadReportWithProgress(report, fullDownloadPath, progressBar)
-			results[index] = result
-		}(i, report, progressBar)
+			ValidateDownloadResult(result)
+			results[i] = result
+		}()
 	}
 
 	p.Wait()
