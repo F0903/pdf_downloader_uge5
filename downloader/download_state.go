@@ -1,6 +1,9 @@
 package downloader
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type DownloadStateEnum int
 
@@ -28,6 +31,18 @@ func (state *DownloadState) String() string {
 		return "Done"
 	case Error:
 		return fmt.Sprintf("Error: %v", state.err)
+	case MissingURLs:
+		return "Missing URLs"
+	}
+	return "Unknown DownloadState"
+}
+
+func (state *DownloadState) StringNoNewLines() string {
+	switch state.stateEnum {
+	case Done:
+		return "Done"
+	case Error:
+		return strings.ReplaceAll(fmt.Sprintf("Error: %v", state.err), "\n", ", ")
 	case MissingURLs:
 		return "Missing URLs"
 	}

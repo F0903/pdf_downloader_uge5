@@ -14,6 +14,11 @@ import (
 	"github.com/vbauerster/mpb/v8/decor"
 )
 
+func isPdf(resp *http.Response) bool {
+	contentType := resp.Header.Get("Content-Type")
+	return contentType == "application/pdf"
+}
+
 func downloadResourceWithProgress(url string, fullDownloadPath string, progressBar *mpb.Bar) error {
 	// Request the web resource
 	resp, err := http.Get(url)
@@ -21,6 +26,10 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 		return fmt.Errorf("http GET request failed %w", err)
 	}
 	defer resp.Body.Close()
+
+	if !isPdf(resp) {
+		return errors.New("resource is not a PDF")
+	}
 
 	// Create the download file
 	file, err := os.Create(fullDownloadPath)
@@ -52,12 +61,21 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 
 	currentUrl := report.PrimaryDownloadLink
 	onFallback := false
+	var fullErr error // Start with an empty error to wrap around
 	for {
 		err := downloadResourceWithProgress(currentUrl, fullDownloadPath, progressBar)
 		if err != nil {
+			fullErr = errors.Join(fullErr, err)
+
 			if onFallback {
 				progressBar.Abort(true)
-				return NewDownloadResult(report, NewDownloadState(Error, errors.New("all download links were broken")))
+				return NewDownloadResult(
+					report,
+					NewDownloadState(
+						Error,
+						fmt.Errorf("all download links were broken: %w", fullErr),
+					),
+				)
 			}
 
 			currentUrl = report.FallbackDownloadLink

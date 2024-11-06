@@ -25,7 +25,7 @@ func setMainSheetWidths(f *excelize.File) error {
 	}
 
 	// Set DownloadState column width
-	err = f.SetColWidth(sheetName, "E", "E", 40)
+	err = f.SetColWidth(sheetName, "E", "E", 200)
 	if err != nil {
 		return fmt.Errorf("could not set sheet E column widths: %v", err)
 	}
@@ -59,7 +59,17 @@ func writeResultsToRows(f *excelize.File, results []downloader.DownloadResult) {
 		index := "A" + strconv.Itoa(i+2)
 		report := result.AssociatedReport
 		downloadState := result.State
-		err := f.SetSheetRow(sheetName, index, &[]interface{}{report.Id, report.Name, report.PrimaryDownloadLink, report.FallbackDownloadLink, downloadState.String()})
+		err := f.SetSheetRow(
+			sheetName,
+			index,
+			&[]interface{}{
+				report.Id,
+				report.Name,
+				report.PrimaryDownloadLink,
+				report.FallbackDownloadLink,
+				downloadState.StringNoNewLines(),
+			},
+		)
 		if err != nil {
 			f.SetCellValue(sheetName, index, fmt.Sprintf("Error when writing row: %v", err))
 		}
