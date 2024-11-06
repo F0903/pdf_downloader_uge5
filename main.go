@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/F0903/pdf_downloader_uge5/downloader"
 	"github.com/F0903/pdf_downloader_uge5/excel"
@@ -27,6 +28,17 @@ func assertArgs(args []string) error {
 	return nil
 }
 
+func countSuccesfulDownloads(results []*downloader.DownloadResult) int {
+	counter := 0
+	for _, result := range results {
+		if !result.State.IsDone() {
+			continue
+		}
+		counter += 1
+	}
+	return counter
+}
+
 func run() error {
 	args := os.Args
 	if err := assertArgs(args); err != nil {
@@ -41,7 +53,8 @@ func run() error {
 		return fmt.Errorf("failed to create output directory: \nw%w", err)
 	}
 
-	// Get the "reports"
+	startTime := time.Now()
+
 	reports, err := excel.ReadReports(dataFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to read Excel: \n%w", err)
@@ -51,11 +64,14 @@ func run() error {
 	reports = reports[:1000]
 
 	results := downloader.DownloadReports(reports, outputDir)
-
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to write download result metadata!\n%w", err)
 	}
+
+	endTime := time.Since(startTime)
+	fmt.Printf("Downloaded %d documents.", countSuccesfulDownloads(results))
+	fmt.Printf("Time taken: %s\n", endTime)
 
 	return nil
 }

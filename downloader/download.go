@@ -1,6 +1,7 @@
 package downloader
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -104,8 +105,9 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 func DownloadReports(reports []*models.Report, directory string) []*DownloadResult {
 	results := make([]*DownloadResult, len(reports))
 
-	interruptChannel := make(chan os.Signal, 1)
-	signal.Notify(interruptChannel, os.Interrupt)
+	//TODO
+	var context context.Context
+	signal.NotifyContext(context, os.Interrupt)
 
 	var wg sync.WaitGroup
 

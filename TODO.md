@@ -1,3 +1,3 @@
 # TODO
 
-- Optionally validate pdf files with library
+- Make CTRL-C exit downloads
