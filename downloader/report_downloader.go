@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"path"
 	"sync"
 
@@ -36,11 +35,34 @@ func assertResponse(resp *http.Response) error {
 	return nil
 }
 
-func downloadResourceWithProgress(url string, fullDownloadPath string, progressBar *mpb.Bar, ctx context.Context) error {
-	// Request the web resource
-	resp, err := http.Get(url)
+type ReportDownloader struct {
+	httpClient *http.Client
+	ctx        context.Context
+	outputDir  string
+}
+
+func NewReportDownloader(ctx context.Context, outputDir string) *ReportDownloader {
+	httpClient := &http.Client{}
+	return &ReportDownloader{
+		httpClient,
+		ctx,
+		outputDir,
+	}
+}
+
+func (dl *ReportDownloader) Close() {
+	dl.httpClient.CloseIdleConnections()
+}
+
+func (dl *ReportDownloader) downloadResourceWithProgress(url string, fullDownloadPath string, progressBar *mpb.Bar) error {
+	req, err := http.NewRequestWithContext(dl.ctx, "GET", url, nil)
 	if err != nil {
-		return fmt.Errorf("http GET request failed %w", err)
+		return fmt.Errorf("could not create HTTP GET request %w", err)
+	}
+
+	resp, err := dl.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("HTTP GET request failed %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -59,9 +81,9 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 	proxyReader := progressBar.ProxyReader(resp.Body)
 
 	// Read from response and write to file whilst updating the progress bar
-	if _, err := utils.CancelableCopy(ctx, file, proxyReader); err != nil {
+	if _, err := utils.CancellableCopy(dl.ctx, file, proxyReader); err != nil {
 		if err == context.Canceled {
-			return errors.New("download was cancelled")
+			return err
 		}
 		return fmt.Errorf("could not write to file: %w", err)
 	}
@@ -69,7 +91,7 @@ func downloadResourceWithProgress(url string, fullDownloadPath string, progressB
 	return nil
 }
 
-func downloadReportWithProgress(report *models.Report, fullDownloadPath string, progressBar *mpb.Bar, ctx context.Context) *DownloadResult {
+func (dl *ReportDownloader) downloadReportWithProgress(report *models.Report, fullDownloadPath string, progressBar *mpb.Bar) *DownloadResult {
 	if report.PrimaryDownloadLink == "" && report.FallbackDownloadLink == "" {
 		progressBar.Abort(true)
 		return NewDownloadResult(report, NewMissingDownloadState())
@@ -79,9 +101,14 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 	onFallback := false
 	var fullErr error // Start with an empty error to wrap around
 	for {
-		err := downloadResourceWithProgress(currentUrl, fullDownloadPath, progressBar, ctx)
+		err := dl.downloadResourceWithProgress(currentUrl, fullDownloadPath, progressBar)
 		if err == nil {
 			break
+		}
+
+		if err == context.Canceled {
+			progressBar.Abort(true)
+			return NewDownloadResult(report, NewCancelledDownloadState())
 		}
 
 		fullErr = errors.Join(fullErr, err)
@@ -104,14 +131,10 @@ func downloadReportWithProgress(report *models.Report, fullDownloadPath string, 
 	return NewDownloadResult(report, NewSuccededDownloadState(fullDownloadPath))
 }
 
-func DownloadReports(reports []*models.Report, directory string) []*DownloadResult {
+func (dl *ReportDownloader) DownloadReports(reports []*models.Report) []*DownloadResult {
 	results := make([]*DownloadResult, len(reports))
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt) // Cancel download on CTRL+C
-	defer stop()
-
 	var wg sync.WaitGroup
-
 	p := mpb.New(
 		mpb.WithWaitGroup(&wg),
 		mpb.WithAutoRefresh(),
@@ -121,7 +144,7 @@ func DownloadReports(reports []*models.Report, directory string) []*DownloadResu
 		wg.Add(1)
 
 		fileName := report.Id
-		fullDownloadPath := path.Join(directory, fileName+".pdf")
+		fullDownloadPath := path.Join(dl.outputDir, fileName+".pdf")
 
 		// It's important to create the progress bar here and not in the new thread or it will panic
 		progressBar := p.AddBar(0,
@@ -140,7 +163,7 @@ func DownloadReports(reports []*models.Report, directory string) []*DownloadResu
 
 		go func() {
 			defer wg.Done()
-			result := downloadReportWithProgress(report, fullDownloadPath, progressBar, ctx)
+			result := dl.downloadReportWithProgress(report, fullDownloadPath, progressBar)
 			ValidateDownloadResult(result)
 			// Since each thread has a unique index this is thread safe, and also preserves the order.
 			results[i] = result

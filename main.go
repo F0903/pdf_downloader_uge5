@@ -2,9 +2,11 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/F0903/pdf_downloader_uge5/downloader"
@@ -59,18 +61,24 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to read Excel: \n%w", err)
 	}
-
 	//DEBUGGING: get subset of reports
 	reports = reports[:100]
 
-	results := downloader.DownloadReports(reports, outputDir)
+	// Cancel downloads on CTRL+C
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+
+	reportDownloader := downloader.NewReportDownloader(ctx, outputDir)
+	defer reportDownloader.Close()
+
+	results := reportDownloader.DownloadReports(reports)
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to write download result metadata!\n%w", err)
 	}
 
 	endTime := time.Since(startTime)
-	fmt.Printf("Downloaded %d documents.", countSuccesfulDownloads(results))
+	fmt.Printf("Downloaded %d documents.\n", countSuccesfulDownloads(results))
 	fmt.Printf("Time taken: %s\n", endTime)
 
 	return nil

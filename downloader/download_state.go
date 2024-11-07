@@ -10,6 +10,7 @@ type DownloadStateEnum int
 const (
 	done = iota + 1
 	failed
+	cancelled
 	missingURLs
 )
 
@@ -19,6 +20,13 @@ type DownloadState struct {
 	writtenPath string
 }
 
+func NewSuccededDownloadState(writtenPath string) *DownloadState {
+	return &DownloadState{
+		stateEnum:   done,
+		writtenPath: writtenPath,
+	}
+}
+
 func NewFailedDownloadState(err error) *DownloadState {
 	return &DownloadState{
 		stateEnum: failed,
@@ -26,10 +34,9 @@ func NewFailedDownloadState(err error) *DownloadState {
 	}
 }
 
-func NewSuccededDownloadState(writtenPath string) *DownloadState {
+func NewCancelledDownloadState() *DownloadState {
 	return &DownloadState{
-		stateEnum:   done,
-		writtenPath: writtenPath,
+		stateEnum: cancelled,
 	}
 }
 
@@ -52,6 +59,8 @@ func (state *DownloadState) String() string {
 	switch state.stateEnum {
 	case done:
 		return "Done"
+	case cancelled:
+		return "Cancelled"
 	case failed:
 		return fmt.Sprintf("Error: %v", state.err)
 	case missingURLs:
@@ -61,13 +70,5 @@ func (state *DownloadState) String() string {
 }
 
 func (state *DownloadState) StringNoNewLines() string {
-	switch state.stateEnum {
-	case done:
-		return "Done"
-	case failed:
-		return strings.ReplaceAll(fmt.Sprintf("Error: %v", state.err), "\n", ", ")
-	case missingURLs:
-		return "Missing URLs"
-	}
-	return "Unknown DownloadState"
+	return strings.ReplaceAll(state.String(), "\n", ", ")
 }

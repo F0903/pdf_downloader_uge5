@@ -13,7 +13,7 @@ type readerFunc func(p []byte) (n int, err error)
 
 func (rf readerFunc) Read(p []byte) (n int, err error) { return rf(p) }
 
-func CancelableCopy(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
+func CancellableCopy(ctx context.Context, dst io.Writer, src io.Reader) (int64, error) {
 	written, err := io.Copy(dst, readerFunc(func(p []byte) (int, error) {
 		select {
 
