@@ -34,17 +34,16 @@ func setMainSheetWidths(f *excelize.File) error {
 }
 
 func writeHeader(f *excelize.File) error {
-	// Write header
 	err := f.SetSheetRow(sheetName, "A1", &[]interface{}{"ID", "Name", "PrimaryDownloadURL", "FallbackDownloadURL", "DownloadState"})
 	if err != nil {
 		return fmt.Errorf("could not set sheet row: %w", err)
 	}
 
-	// Set header style
 	boldTextStyle, err := f.NewStyle(&excelize.Style{Font: &excelize.Font{Bold: true}})
 	if err != nil {
 		return fmt.Errorf("could not create bold text style: %w", err)
 	}
+
 	err = f.SetRowStyle(sheetName, 1, 1, boldTextStyle)
 	if err != nil {
 		return fmt.Errorf("could not set header row style: %w", err)
@@ -92,20 +91,16 @@ func WriteDownloadResults(results []*downloader.DownloadResult, directory string
 		return fmt.Errorf("could not rename sheet on metadata spreadsheet: %w", err)
 	}
 
-	// Write our header
 	if err := writeHeader(f); err != nil {
 		return fmt.Errorf("could not write header: %w", err)
 	}
 
-	// Set column widths for better readability
 	if err := setMainSheetWidths(f); err != nil {
 		return fmt.Errorf("could not set column widths: %w", err)
 	}
 
-	// Write our rows
 	writeResultsToRows(f, results)
 
-	// Save
 	if err := f.SaveAs(fullOutputPath); err != nil {
 		return fmt.Errorf("could not save download result metadata spreadsheet: %w", err)
 	}

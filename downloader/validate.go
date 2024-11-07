@@ -25,6 +25,7 @@ func ValidateDownloadResult(result *DownloadResult) {
 	state.SetError(fmt.Errorf("could not validate PDF: %w", err))
 }
 
+// Currently not used. It makes more sense to validate each download individually the moment they are downloaded.
 func ValidateDownloadResults(results []*DownloadResult) {
 	var wg sync.WaitGroup
 	p := mpb.New(
