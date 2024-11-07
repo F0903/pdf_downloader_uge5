@@ -61,8 +61,6 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to read Excel: \n%w", err)
 	}
-	//DEBUGGING: get subset of reports
-	reports = reports[:100]
 
 	// Cancel downloads on CTRL+C
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
