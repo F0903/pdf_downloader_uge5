@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -9,8 +8,9 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/F0903/pdf_downloader_uge5/downloader"
+	"github.com/F0903/pdf_downloader_uge5/downloading/report_downloader"
 	"github.com/F0903/pdf_downloader_uge5/excel"
+	"github.com/F0903/pdf_downloader_uge5/utils"
 )
 
 func assertArgs(args []string) error {
@@ -30,17 +30,6 @@ func assertArgs(args []string) error {
 	return nil
 }
 
-func countSuccesfulDownloads(results []*downloader.DownloadResult) int {
-	counter := 0
-	for _, result := range results {
-		if !result.State.IsDone() {
-			continue
-		}
-		counter += 1
-	}
-	return counter
-}
-
 func run() error {
 	args := os.Args
 	if err := assertArgs(args); err != nil {
@@ -58,6 +47,10 @@ func run() error {
 	startTime := time.Now()
 
 	reports, err := excel.ReadReports(dataFilePath)
+
+	//DEBUGGING: only download subset of reports
+	reports = reports[:2]
+
 	if err != nil {
 		return fmt.Errorf("failed to read Excel: \n%w", err)
 	}
@@ -66,7 +59,7 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	reportDownloader := downloader.NewReportDownloader(ctx, outputDir)
+	reportDownloader := report_downloader.NewReportDownloader(ctx, outputDir)
 	defer reportDownloader.Close()
 
 	results := reportDownloader.DownloadReports(reports)
@@ -76,13 +69,16 @@ func run() error {
 	}
 
 	endTime := time.Since(startTime)
-	fmt.Printf("Downloaded %d documents.\n", countSuccesfulDownloads(results))
+	fmt.Printf("Downloaded %d documents.\n", report_downloader.CountSuccesfulDownloads(results))
 	fmt.Printf("Time taken: %s\n", endTime)
 
 	return nil
 }
 
 func main() {
+	logFile := utils.RedirectLoggingToFile("log.txt")
+	defer logFile.Close()
+
 	if err := run(); err != nil {
 		fmt.Printf("Error:\n %v\n", err)
 	} else {
@@ -90,5 +86,5 @@ func main() {
 	}
 
 	fmt.Println("Press Enter to exit...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n') // Wait for Enter
+	utils.WaitForInput('\n')
 }
