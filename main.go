@@ -46,8 +46,6 @@ func run() error {
 	reportDownloader := report_downloader.NewReportDownloader(ctx, outputDir)
 	defer reportDownloader.Close()
 
-	//DEBUGGING: only download subset of reports
-	reports = reports[:50]
 	results := reportDownloader.DownloadReports(reports)
 
 	// Write our metadata
