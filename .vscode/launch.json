@@ -11,7 +11,7 @@
       "request": "launch",
       "mode": "exec",
       "program": "${workspaceFolderBasename}.exe",
-      "args": ["data/GRI_2017_2020.xlsx", "downloads"],
+      "args": ["input_data=\"data/GRI_2017_2020.xlsx\"", "output_dir=\"downloads\""],
       "console": "integratedTerminal"
     }
   ]

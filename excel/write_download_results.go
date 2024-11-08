@@ -75,6 +75,7 @@ func writeResultsToRows(f *excelize.File, results []*report_downloader.ReportDow
 	}
 }
 
+// Writes the download results to Excel spreadsheet.
 func WriteDownloadResults(results []*report_downloader.ReportDownloadResult, directory string) error {
 	fullOutputPath := path.Join(directory, "metadata.xlsx")
 	fmt.Printf("Writing download result metadata to '%s'...\n", fullOutputPath)
@@ -99,6 +100,7 @@ func WriteDownloadResults(results []*report_downloader.ReportDownloadResult, dir
 		return fmt.Errorf("could not set column widths: %w", err)
 	}
 
+	// I don't think I need to comment this one
 	writeResultsToRows(f, results)
 
 	if err := f.SaveAs(fullOutputPath); err != nil {

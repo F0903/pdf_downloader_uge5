@@ -1,3 +1,3 @@
 # TODO
 
-- Make CTRL-C exit downloads
+- Write README

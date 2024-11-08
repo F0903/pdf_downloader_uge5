@@ -1,54 +1,31 @@
 package main
 
 import (
-	"bufio"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"time"
 
+	"github.com/F0903/pdf_downloader_uge5/args"
 	"github.com/F0903/pdf_downloader_uge5/downloader/report_downloader"
 	"github.com/F0903/pdf_downloader_uge5/excel"
+	"github.com/F0903/pdf_downloader_uge5/utils"
 )
 
-func assertArgs(args []string) error {
-	argLen := len(args)
-
-	// + 1 because one arg is usually always provided by Windows
-	const maxArgs = 2 + 1
-
-	if argLen < 2 {
-		return errors.New("you must provide a path to the excel spreadsheet")
-	} else if argLen < 3 {
-		return errors.New("you must provide a path to downloads output folder")
-	} else if argLen > maxArgs {
-		return errors.New("too many arguments")
-	}
-
-	return nil
-}
-
-func countSuccesfulDownloads(results []*report_downloader.ReportDownloadResult) int {
-	counter := 0
-	for _, result := range results {
-		if !result.State.IsDone() {
-			continue
-		}
-		counter += 1
-	}
-	return counter
-}
-
 func run() error {
-	args := os.Args
-	if err := assertArgs(args); err != nil {
+	argMap, err := args.ParseArgs()
+	if err != nil {
 		return fmt.Errorf("argument error: %w", err)
 	}
 
-	dataFilePath := args[1]
-	outputDir := args[2]
+	// Check our required args are present
+	if err := args.AssertArgsPresent(argMap, []string{"input_data", "output_dir"}); err != nil {
+		return fmt.Errorf("missing args: %w", err)
+	}
+
+	excelDataPath := argMap["input_data"].Value
+	outputDir := argMap["output_dir"].Value
 
 	// Create the output directory if it doesn’t exist
 	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {
@@ -57,7 +34,7 @@ func run() error {
 
 	startTime := time.Now()
 
-	reports, err := excel.ReadReports(dataFilePath)
+	reports, err := excel.ReadReports(excelDataPath)
 	if err != nil {
 		return fmt.Errorf("failed to read Excel: \n%w", err)
 	}
@@ -70,22 +47,25 @@ func run() error {
 	defer reportDownloader.Close()
 
 	//DEBUGGING: only download subset of reports
-	reports = reports[:10]
+	reports = reports[:50]
 	results := reportDownloader.DownloadReports(reports)
 
+	// Write our metadata
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to write download result metadata!\n%w", err)
 	}
 
 	endTime := time.Since(startTime)
-	fmt.Printf("Downloaded %d documents.\n", countSuccesfulDownloads(results))
-	fmt.Printf("Time taken: %s\n", endTime)
+
+	fmt.Printf("Downloaded %d documents.\n", report_downloader.CountSuccesfulReportDownloads(results))
+	fmt.Printf("Time taken: %s\n", endTime.Round(time.Second))
 
 	return nil
 }
 
 func main() {
+	// We wrap all the stuff in the run() func so it's easier to
 	if err := run(); err != nil {
 		fmt.Printf("Error:\n %v\n", err)
 	} else {
@@ -93,5 +73,5 @@ func main() {
 	}
 
 	fmt.Println("Press Enter to exit...")
-	bufio.NewReader(os.Stdin).ReadBytes('\n') // Wait for Enter
+	utils.WaitForKey('\n')
 }
