@@ -1,6 +1,6 @@
 # PDF Downloader (Uge 5 Projekt)
 
-The PDF Download task from week 5.
+The PDF Downloader task from week 5.
 Takes a specific Excel sheet (in the data folder) as input, reads each row as a "report" with relevant data.
 Then downloads all reports in parallel with a helpful progress bar for each download.
 
