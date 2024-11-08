@@ -1,4 +1,4 @@
-package downloader
+package report_downloader
 
 import (
 	"fmt"
@@ -10,13 +10,13 @@ import (
 	"github.com/vbauerster/mpb/v8/decor"
 )
 
-func ValidateDownloadResult(result *DownloadResult) {
+func ValidateDownloadResult(result *ReportDownloadResult) {
 	state := result.State
 	if !state.IsDone() {
 		return
 	}
 
-	filePath := state.writtenPath
+	filePath := state.WrittenPath
 	err := api.ValidateFile(filePath, model.NewDefaultConfiguration())
 	if err == nil {
 		return
@@ -26,7 +26,7 @@ func ValidateDownloadResult(result *DownloadResult) {
 }
 
 // Currently not used. It makes more sense to validate each download individually the moment they are downloaded.
-func ValidateDownloadResults(results []*DownloadResult) {
+func ValidateDownloadResults(results []*ReportDownloadResult) {
 	var wg sync.WaitGroup
 	p := mpb.New(
 		mpb.WithWaitGroup(&wg),

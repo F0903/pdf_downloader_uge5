@@ -9,7 +9,7 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/F0903/pdf_downloader_uge5/downloader"
+	"github.com/F0903/pdf_downloader_uge5/downloader/report_downloader"
 	"github.com/F0903/pdf_downloader_uge5/excel"
 )
 
@@ -30,7 +30,7 @@ func assertArgs(args []string) error {
 	return nil
 }
 
-func countSuccesfulDownloads(results []*downloader.DownloadResult) int {
+func countSuccesfulDownloads(results []*report_downloader.ReportDownloadResult) int {
 	counter := 0
 	for _, result := range results {
 		if !result.State.IsDone() {
@@ -66,10 +66,13 @@ func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 
-	reportDownloader := downloader.NewReportDownloader(ctx, outputDir)
+	reportDownloader := report_downloader.NewReportDownloader(ctx, outputDir)
 	defer reportDownloader.Close()
 
+	//DEBUGGING: only download subset of reports
+	reports = reports[:10]
 	results := reportDownloader.DownloadReports(reports)
+
 	err = excel.WriteDownloadResults(results, outputDir)
 	if err != nil {
 		return fmt.Errorf("failed to write download result metadata!\n%w", err)

@@ -5,7 +5,7 @@ import (
 	"path"
 	"strconv"
 
-	"github.com/F0903/pdf_downloader_uge5/downloader"
+	"github.com/F0903/pdf_downloader_uge5/downloader/report_downloader"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -52,7 +52,7 @@ func writeHeader(f *excelize.File) error {
 	return nil
 }
 
-func writeResultsToRows(f *excelize.File, results []*downloader.DownloadResult) {
+func writeResultsToRows(f *excelize.File, results []*report_downloader.ReportDownloadResult) {
 	for i, result := range results {
 		// We add 2 because Excel starts counting at 1, and our header is already at A1
 		index := "A" + strconv.Itoa(i+2)
@@ -75,7 +75,7 @@ func writeResultsToRows(f *excelize.File, results []*downloader.DownloadResult) 
 	}
 }
 
-func WriteDownloadResults(results []*downloader.DownloadResult, directory string) error {
+func WriteDownloadResults(results []*report_downloader.ReportDownloadResult, directory string) error {
 	fullOutputPath := path.Join(directory, "metadata.xlsx")
 	fmt.Printf("Writing download result metadata to '%s'...\n", fullOutputPath)
 
