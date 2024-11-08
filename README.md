@@ -1,8 +1,12 @@
 # PDF Downloader (Uge 5 Projekt)
 
 The PDF Downloader task from week 5.
-Takes a specific Excel sheet (in the data folder) as input, reads each row as a "report" with relevant data.
-Then downloads all reports in parallel with a helpful progress bar for each download.
+
+Works the following way:
+- Takes a specific Excel speadsheet (provided in the data folder) as input. 
+- Then reads each row as a "report" with data from relevant columns.
+- Then downloads all reports in parallel with a helpful progress bar for each download.
+- Then writes the result of each download to a metadata.xlsx in the output dir
 
 ## Building
 
